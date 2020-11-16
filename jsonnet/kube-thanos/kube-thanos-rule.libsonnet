@@ -217,7 +217,9 @@
 
   withRules:: {
     local tr = self,
+    local mountParentPath = '/etc/thanos/rules/',
     config+:: {
+      reloaderImage: error 'must provide reloader image',
       rulesConfig: error 'must provide rulesConfig',
     },
 
@@ -228,15 +230,29 @@
             containers: [
               if c.name == 'thanos-rule' then c {
                 args+: [
-                  '--rule-file=/etc/thanos/rules/' + ruleConfig.name + '/' + ruleConfig.key
+                  '--rule-file=' + mountParentPath + ruleConfig.name + '/' + ruleConfig.key
                   for ruleConfig in tr.config.rulesConfig
                 ],
                 volumeMounts+: [
-                  { name: ruleConfig.name, mountPath: '/etc/thanos/rules/' + ruleConfig.name }
+                  { name: ruleConfig.name, mountPath: mountParentPath + ruleConfig.name }
                   for ruleConfig in tr.config.rulesConfig
                 ],
               } else c
               for c in super.containers
+            ] + [
+              {
+                args: ['-webhook-url=http://localhost:' + tr.service.spec.ports[1].port + '/-/reload'] + 
+                [
+                  '-volume-dir=' + mountParentPath + ruleConfig.name
+                  for ruleConfig in tr.config.rulesConfig
+                ],
+                image: tr.config.reloaderImage,
+                name: 'configmap-reloader',
+                volumeMounts: [
+                  { name: ruleConfig.name, mountPath: mountParentPath + ruleConfig.name }
+                  for ruleConfig in tr.config.rulesConfig
+                ],
+              },
             ],
 
             volumes+: [
