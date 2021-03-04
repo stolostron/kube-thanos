@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: rule-evaluation-engine
     app.kubernetes.io/instance: thanos-rule
     app.kubernetes.io/name: thanos-rule
-    app.kubernetes.io/version: v0.16.0
+    app.kubernetes.io/version: v0.17.2
   name: thanos-rule
   namespace: thanos
 spec:
@@ -22,12 +22,13 @@ spec:
         app.kubernetes.io/component: rule-evaluation-engine
         app.kubernetes.io/instance: thanos-rule
         app.kubernetes.io/name: thanos-rule
-        app.kubernetes.io/version: v0.16.0
+        app.kubernetes.io/version: v0.17.2
     spec:
       containers:
       - args:
         - rule
         - --log.level=info
+        - --log.format=logfmt
         - --grpc-address=0.0.0.0:10901
         - --http-address=0.0.0.0:10902
         - --objstore.config=$(OBJSTORE_CONFIG)
@@ -53,7 +54,7 @@ spec:
             secretKeyRef:
               key: thanos.yaml
               name: thanos-objectstorage
-        image: quay.io/thanos/thanos:v0.16.0
+        image: quay.io/thanos/thanos:v0.17.2
         livenessProbe:
           failureThreshold: 24
           httpGet:

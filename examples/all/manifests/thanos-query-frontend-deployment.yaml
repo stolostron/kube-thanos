@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: query-cache
     app.kubernetes.io/instance: thanos-query-frontend
     app.kubernetes.io/name: thanos-query-frontend
-    app.kubernetes.io/version: v0.16.0
+    app.kubernetes.io/version: v0.17.2
   name: thanos-query-frontend
   namespace: thanos
 spec:
@@ -21,7 +21,7 @@ spec:
         app.kubernetes.io/component: query-cache
         app.kubernetes.io/instance: thanos-query-frontend
         app.kubernetes.io/name: thanos-query-frontend
-        app.kubernetes.io/version: v0.16.0
+        app.kubernetes.io/version: v0.17.2
     spec:
       affinity:
         podAntiAffinity:
@@ -40,6 +40,8 @@ spec:
       containers:
       - args:
         - query-frontend
+        - --log.level=info
+        - --log.format=logfmt
         - --query-frontend.compress-responses
         - --http-address=0.0.0.0:9090
         - --query-frontend.downstream-url=http://thanos-query.thanos.svc.cluster.local.:9090
@@ -51,7 +53,7 @@ spec:
         - |-
           --query-range.response-cache-config="config":
             "addresses":
-            - "dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.thanos.svc.cluster.local"
+            - "dnssrv+_client._tcp.<MEMCACHED_SERVICE>.thanos.svc.cluster.local"
             "dns_provider_update_interval": "10s"
             "max_async_buffer_size": 10000
             "max_async_concurrency": 20
@@ -63,7 +65,7 @@ spec:
         - |-
           --labels.response-cache-config="config":
             "addresses":
-            - "dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.thanos.svc.cluster.local"
+            - "dnssrv+_client._tcp.<MEMCACHED_SERVICE>.thanos.svc.cluster.local"
             "dns_provider_update_interval": "10s"
             "max_async_buffer_size": 10000
             "max_async_concurrency": 20
@@ -78,7 +80,7 @@ spec:
             "sampler_type": "ratelimiting"
             "service_name": "thanos-query-frontend"
           "type": "JAEGER"
-        image: quay.io/thanos/thanos:v0.16.0
+        image: quay.io/thanos/thanos:v0.17.2
         livenessProbe:
           failureThreshold: 4
           httpGet:

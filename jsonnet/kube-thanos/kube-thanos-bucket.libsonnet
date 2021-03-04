@@ -1,3 +1,6 @@
+// These are the defaults for this components configuration.
+// When calling the function to generate the component's manifest,
+// you can pass an object structured like the default to overwrite default values.
 local defaults = {
   local defaults = self,
   name: 'thanos-bucket',
@@ -7,6 +10,7 @@ local defaults = {
   objectStorageConfig: error 'must provide objectStorageConfig',
   resources: {},
   logLevel: 'info',
+  logFormat: 'logfmt',
   ports: {
     http: 10902,
   },
@@ -22,7 +26,7 @@ local defaults = {
   podLabelSelector:: {
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
-    if !std.setMember(labelName, ['app.kubernetes.io/version'])
+    if labelName != 'app.kubernetes.io/version'
   },
 };
 
@@ -35,30 +39,29 @@ function(params) {
   assert std.isNumber(tb.config.replicas) && tb.config.replicas >= 0 : 'thanos bucket replicas has to be number >= 0',
   assert std.isObject(tb.config.resources),
 
-  service:
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: {
-        name: tb.config.name,
-        namespace: tb.config.namespace,
-        labels: tb.config.commonLabels,
-      },
-      spec: {
-        ports: [
-          {
-            assert std.isString(name),
-            assert std.isNumber(tb.config.ports[name]),
-
-            name: name,
-            port: tb.config.ports[name],
-            targetPort: tb.config.ports[name],
-          }
-          for name in std.objectFields(tb.config.ports)
-        ],
-        selector: tb.config.podLabelSelector,
-      },
+  service: {
+    apiVersion: 'v1',
+    kind: 'Service',
+    metadata: {
+      name: tb.config.name,
+      namespace: tb.config.namespace,
+      labels: tb.config.commonLabels,
     },
+    spec: {
+      ports: [
+        {
+          assert std.isString(name),
+          assert std.isNumber(tb.config.ports[name]),
+
+          name: name,
+          port: tb.config.ports[name],
+          targetPort: tb.config.ports[name],
+        }
+        for name in std.objectFields(tb.config.ports)
+      ],
+      selector: tb.config.podLabelSelector,
+    },
+  },
 
   deployment:
     local container = {
@@ -69,6 +72,7 @@ function(params) {
         'bucket',
         'web',
         '--log.level=' + tb.config.logLevel,
+        '--log.format=' + tb.config.logFormat,
         '--objstore.config=$(OBJSTORE_CONFIG)',
       ] + (
         if std.length(tb.config.tracing) > 0 then [

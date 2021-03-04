@@ -14,6 +14,7 @@ local defaults = {
   alertmanagersURLs: [],
   queriers: [],
   logLevel: 'info',
+  logFormat: 'logfmt',
   resources: {},
   serviceMonitor: false,
   ports: {
@@ -32,7 +33,7 @@ local defaults = {
   podLabelSelector:: {
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
-    if !std.setMember(labelName, ['app.kubernetes.io/version'])
+    if labelName != 'app.kubernetes.io/version'
   },
 };
 
@@ -42,7 +43,7 @@ function(params) {
   // Combine the defaults and the passed params to make the component's config.
   config:: defaults + params,
   // Safety checks for combined config of defaults and params
-  assert std.isNumber(tr.config.replicas) && tr.config.replicas >= 0 : 'thanos receive replicas has to be number >= 0',
+  assert std.isNumber(tr.config.replicas) && tr.config.replicas >= 0 : 'thanos rule replicas has to be number >= 0',
   assert std.isArray(tr.config.ruleFiles),
   assert std.isArray(tr.config.rulesConfig),
   assert std.isArray(tr.config.alertmanagersURLs),
@@ -50,31 +51,30 @@ function(params) {
   assert std.isBoolean(tr.config.serviceMonitor),
   assert std.isObject(tr.config.volumeClaimTemplate),
 
-  service:
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: {
-        name: tr.config.name,
-        namespace: tr.config.namespace,
-        labels: tr.config.commonLabels,
-      },
-      spec: {
-        ports: [
-          {
-            assert std.isString(name),
-            assert std.isNumber(tr.config.ports[name]),
-
-            name: name,
-            port: tr.config.ports[name],
-            targetPort: tr.config.ports[name],
-          }
-          for name in std.objectFields(tr.config.ports)
-        ],
-        clusterIP: 'None',
-        selector: tr.config.podLabelSelector,
-      },
+  service: {
+    apiVersion: 'v1',
+    kind: 'Service',
+    metadata: {
+      name: tr.config.name,
+      namespace: tr.config.namespace,
+      labels: tr.config.commonLabels,
     },
+    spec: {
+      ports: [
+        {
+          assert std.isString(name),
+          assert std.isNumber(tr.config.ports[name]),
+
+          name: name,
+          port: tr.config.ports[name],
+          targetPort: tr.config.ports[name],
+        }
+        for name in std.objectFields(tr.config.ports)
+      ],
+      clusterIP: 'None',
+      selector: tr.config.podLabelSelector,
+    },
+  },
 
   statefulSet:
     local c = {
@@ -84,6 +84,7 @@ function(params) {
         [
           'rule',
           '--log.level=' + tr.config.logLevel,
+          '--log.format=' + tr.config.logFormat,
           '--grpc-address=0.0.0.0:%d' % tr.config.ports.grpc,
           '--http-address=0.0.0.0:%d' % tr.config.ports.http,
           '--objstore.config=$(OBJSTORE_CONFIG)',

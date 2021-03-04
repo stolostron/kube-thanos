@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: query-layer
     app.kubernetes.io/instance: thanos-query
     app.kubernetes.io/name: thanos-query
-    app.kubernetes.io/version: v0.16.0
+    app.kubernetes.io/version: v0.17.2
   name: thanos-query
   namespace: thanos
 spec:
@@ -21,7 +21,7 @@ spec:
         app.kubernetes.io/component: query-layer
         app.kubernetes.io/instance: thanos-query
         app.kubernetes.io/name: thanos-query
-        app.kubernetes.io/version: v0.16.0
+        app.kubernetes.io/version: v0.17.2
     spec:
       affinity:
         podAntiAffinity:
@@ -43,11 +43,17 @@ spec:
         - --grpc-address=0.0.0.0:10901
         - --http-address=0.0.0.0:9090
         - --log.level=debug
+        - --log.format=logfmt
         - --query.replica-label=prometheus_replica
         - --query.replica-label=rule_replica
         - --store=dnssrv+_grpc._tcp.thanos-receive.thanos.svc.cluster.local
         - --store=dnssrv+_grpc._tcp.thanos-rule.thanos.svc.cluster.local
         - --store=dnssrv+_grpc._tcp.thanos-store.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.thanos-receive-default.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.thanos-receive-region-1.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.thanos-store-0.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.thanos-store-1.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.thanos-store-2.thanos.svc.cluster.local
         - --query.timeout=5m
         - --query.lookback-delta=15m
         - |-
@@ -56,7 +62,7 @@ spec:
             "sampler_type": "ratelimiting"
             "service_name": "thanos-query"
           "type": "JAEGER"
-        image: quay.io/thanos/thanos:v0.16.0
+        image: quay.io/thanos/thanos:v0.17.2
         livenessProbe:
           failureThreshold: 4
           httpGet:

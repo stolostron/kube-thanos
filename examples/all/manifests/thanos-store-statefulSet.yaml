@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: object-store-gateway
     app.kubernetes.io/instance: thanos-store
     app.kubernetes.io/name: thanos-store
-    app.kubernetes.io/version: v0.16.0
+    app.kubernetes.io/version: v0.17.2
   name: thanos-store
   namespace: thanos
 spec:
@@ -22,7 +22,7 @@ spec:
         app.kubernetes.io/component: object-store-gateway
         app.kubernetes.io/instance: thanos-store
         app.kubernetes.io/name: thanos-store
-        app.kubernetes.io/version: v0.16.0
+        app.kubernetes.io/version: v0.17.2
     spec:
       affinity:
         podAntiAffinity:
@@ -46,16 +46,16 @@ spec:
       - args:
         - store
         - --log.level=info
+        - --log.format=logfmt
         - --data-dir=/var/thanos/store
         - --grpc-address=0.0.0.0:10901
         - --http-address=0.0.0.0:10902
         - --objstore.config=$(OBJSTORE_CONFIG)
         - --ignore-deletion-marks-delay=24h
-        - --experimental.enable-index-cache-postings-compression
         - |-
           --index-cache.config="config":
             "addresses":
-            - "dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.thanos.svc.cluster.local"
+            - "dnssrv+_client._tcp.<MEMCACHED_SERVICE>.thanos.svc.cluster.local"
             "dns_provider_update_interval": "10s"
             "max_async_buffer_size": 10000
             "max_async_concurrency": 20
@@ -72,7 +72,7 @@ spec:
           "chunk_subrange_ttl": "24h"
           "config":
             "addresses":
-            - "dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.thanos.svc.cluster.local"
+            - "dnssrv+_client._tcp.<MEMCACHED_SERVICE>.thanos.svc.cluster.local"
             "dns_provider_update_interval": "10s"
             "max_async_buffer_size": 10000
             "max_async_concurrency": 20
@@ -99,7 +99,7 @@ spec:
             secretKeyRef:
               key: thanos.yaml
               name: thanos-objectstorage
-        image: quay.io/thanos/thanos:v0.16.0
+        image: quay.io/thanos/thanos:v0.17.2
         livenessProbe:
           failureThreshold: 8
           httpGet:

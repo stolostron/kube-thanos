@@ -3,10 +3,11 @@ kind: ServiceMonitor
 metadata:
   labels:
     app.kubernetes.io/component: database-write-hashring
-    app.kubernetes.io/instance: thanos-receive
+    app.kubernetes.io/instance: thanos-receive-default
     app.kubernetes.io/name: thanos-receive
     app.kubernetes.io/version: v0.17.2
-  name: thanos-receive
+    controller.receive.thanos.io/hashring: default
+  name: thanos-receive-default
   namespace: thanos
 spec:
   endpoints:
@@ -20,5 +21,6 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/component: database-write-hashring
-      app.kubernetes.io/instance: thanos-receive
+      app.kubernetes.io/instance: thanos-receive-default
       app.kubernetes.io/name: thanos-receive
+      controller.receive.thanos.io/hashring: default

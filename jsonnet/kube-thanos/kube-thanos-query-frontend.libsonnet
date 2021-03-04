@@ -22,6 +22,7 @@ local defaults = {
   queryRangeCache: {},
   labelsCache: {},
   logLevel: 'info',
+  logFormat: 'logfmt',
   resources: {},
   serviceMonitor: false,
   ports: {
@@ -54,7 +55,7 @@ local defaults = {
   podLabelSelector:: {
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
-    if !std.setMember(labelName, ['app.kubernetes.io/version'])
+    if labelName != 'app.kubernetes.io/version'
   },
 };
 
@@ -64,15 +65,27 @@ function(params) {
   // Combine the defaults and the passed params to make the component's config.
   config:: defaults + params + {
     queryRangeCache+:
-      if std.objectHas(params, 'queryRangeCache') && params.queryRangeCache.type == 'memcached' then
+      if std.objectHas(params, 'queryRangeCache')
+         && std.objectHas(params.queryRangeCache, 'type')
+         && std.asciiUpper(params.queryRangeCache.type) == 'MEMCACHED' then
+
         defaults.memcachedDefaults + params.queryRangeCache
-      else if std.objectHas(params, 'queryRangeCache') && params.queryRangeCache.type == 'in-memory' then
+      else if std.objectHas(params, 'queryRangeCache')
+              && std.objectHas(params.queryRangeCache, 'type')
+              && std.asciiUpper(params.queryRangeCache.type) == 'IN-MEMORY' then
+
         defaults.fifoCache + params.queryRangeCache
       else {},
     labelsCache+:
-      if std.objectHas(params, 'labelsCache') && params.labelsCache.type == 'memcached' then
+      if std.objectHas(params, 'labelsCache')
+         && std.objectHas(params.labelsCache, 'type')
+         && std.asciiUpper(params.labelsCache.type) == 'MEMCACHED' then
+
         defaults.memcachedDefaults + params.labelsCache
-      else if std.objectHas(params, 'labelsCache') && params.labelsCache.type == 'in-memory' then
+      else if std.objectHas(params, 'labelsCache')
+              && std.objectHas(params.labelsCache, 'type')
+              && std.asciiUpper(params.labelsCache.type) == 'IN-MEMORY' then
+
         defaults.fifoCache + params.labelsCache
       else {},
   },
@@ -82,30 +95,29 @@ function(params) {
   assert std.isBoolean(tqf.config.serviceMonitor),
   assert std.isNumber(tqf.config.maxRetries) && tqf.config.maxRetries >= 0 : 'thanos query frontend maxRetries has to be number >= 0',
 
-  service:
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: {
-        name: tqf.config.name,
-        namespace: tqf.config.namespace,
-        labels: tqf.config.commonLabels,
-      },
-      spec: {
-        selector: tqf.config.podLabelSelector,
-        ports: [
-          {
-            assert std.isString(name),
-            assert std.isNumber(tqf.config.ports[name]),
-
-            name: name,
-            port: tqf.config.ports[name],
-            targetPort: tqf.config.ports[name],
-          }
-          for name in std.objectFields(tqf.config.ports)
-        ],
-      },
+  service: {
+    apiVersion: 'v1',
+    kind: 'Service',
+    metadata: {
+      name: tqf.config.name,
+      namespace: tqf.config.namespace,
+      labels: tqf.config.commonLabels,
     },
+    spec: {
+      selector: tqf.config.podLabelSelector,
+      ports: [
+        {
+          assert std.isString(name),
+          assert std.isNumber(tqf.config.ports[name]),
+
+          name: name,
+          port: tqf.config.ports[name],
+          targetPort: tqf.config.ports[name],
+        }
+        for name in std.objectFields(tqf.config.ports)
+      ],
+    },
+  },
 
   deployment:
     local c = {
@@ -113,6 +125,8 @@ function(params) {
       image: tqf.config.image,
       args: [
         'query-frontend',
+        '--log.level=' + tqf.config.logLevel,
+        '--log.format=' + tqf.config.logFormat,
         '--query-frontend.compress-responses',
         '--http-address=0.0.0.0:%d' % tqf.config.ports.http,
         '--query-frontend.downstream-url=%s' % tqf.config.downstreamURL,
@@ -217,5 +231,4 @@ function(params) {
       ],
     },
   },
-
 }

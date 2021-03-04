@@ -1,3 +1,6 @@
+// These are the defaults for this components configuration.
+// When calling the function to generate the component's manifest,
+// you can pass an object structured like the default to overwrite default values.
 local defaults = {
   local defaults = self,
   name: 'thanos-compact',
@@ -7,6 +10,7 @@ local defaults = {
   objectStorageConfig: error 'must provide objectStorageConfig',
   resources: {},
   logLevel: 'info',
+  logFormat: 'logfmt',
   serviceMonitor: false,
   volumeClaimTemplate: {},
   retentionResolutionRaw: '0d',
@@ -30,7 +34,7 @@ local defaults = {
   podLabelSelector:: {
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
-    if !std.setMember(labelName, ['app.kubernetes.io/version'])
+    if labelName != 'app.kubernetes.io/version'
   },
 };
 
@@ -46,30 +50,29 @@ function(params) {
   assert std.isBoolean(tc.config.serviceMonitor),
   assert std.isArray(tc.config.deduplicationReplicaLabels),
 
-  service:
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: {
-        name: tc.config.name,
-        namespace: tc.config.namespace,
-        labels: tc.config.commonLabels,
-      },
-      spec: {
-        selector: tc.config.podLabelSelector,
-        ports: [
-          {
-            assert std.isString(name),
-            assert std.isNumber(tc.config.ports[name]),
-
-            name: name,
-            port: tc.config.ports[name],
-            targetPort: tc.config.ports[name],
-          }
-          for name in std.objectFields(tc.config.ports)
-        ],
-      },
+  service: {
+    apiVersion: 'v1',
+    kind: 'Service',
+    metadata: {
+      name: tc.config.name,
+      namespace: tc.config.namespace,
+      labels: tc.config.commonLabels,
     },
+    spec: {
+      selector: tc.config.podLabelSelector,
+      ports: [
+        {
+          assert std.isString(name),
+          assert std.isNumber(tc.config.ports[name]),
+
+          name: name,
+          port: tc.config.ports[name],
+          targetPort: tc.config.ports[name],
+        }
+        for name in std.objectFields(tc.config.ports)
+      ],
+    },
+  },
 
   statefulSet:
     local c = {
@@ -79,6 +82,7 @@ function(params) {
         'compact',
         '--wait',
         '--log.level=' + tc.config.logLevel,
+        '--log.format=' + tc.config.logFormat,
         '--objstore.config=$(OBJSTORE_CONFIG)',
         '--data-dir=/var/thanos/compact',
         '--debug.accept-malformed-index',

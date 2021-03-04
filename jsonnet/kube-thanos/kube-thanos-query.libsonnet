@@ -20,6 +20,7 @@ local defaults = {
   },
   serviceMonitor: false,
   logLevel: 'info',
+  logFormat: 'logfmt',
   tracing: {},
 
   commonLabels:: {
@@ -32,7 +33,7 @@ local defaults = {
   podLabelSelector:: {
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
-    if !std.setMember(labelName, ['app.kubernetes.io/version'])
+    if labelName != 'app.kubernetes.io/version'
   },
 };
 
@@ -49,30 +50,29 @@ function(params) {
   assert std.isString(tq.config.queryTimeout),
   assert std.isBoolean(tq.config.serviceMonitor),
 
-  service:
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
-      metadata: {
-        name: tq.config.name,
-        namespace: tq.config.namespace,
-        labels: tq.config.commonLabels,
-      },
-      spec: {
-        ports: [
-          {
-            assert std.isString(name),
-            assert std.isNumber(tq.config.ports[name]),
-
-            name: name,
-            port: tq.config.ports[name],
-            targetPort: tq.config.ports[name],
-          }
-          for name in std.objectFields(tq.config.ports)
-        ],
-        selector: tq.config.podLabelSelector,
-      },
+  service: {
+    apiVersion: 'v1',
+    kind: 'Service',
+    metadata: {
+      name: tq.config.name,
+      namespace: tq.config.namespace,
+      labels: tq.config.commonLabels,
     },
+    spec: {
+      ports: [
+        {
+          assert std.isString(name),
+          assert std.isNumber(tq.config.ports[name]),
+
+          name: name,
+          port: tq.config.ports[name],
+          targetPort: tq.config.ports[name],
+        }
+        for name in std.objectFields(tq.config.ports)
+      ],
+      selector: tq.config.podLabelSelector,
+    },
+  },
 
   deployment:
     local c = {
@@ -84,6 +84,7 @@ function(params) {
           '--grpc-address=0.0.0.0:%d' % tq.config.ports.grpc,
           '--http-address=0.0.0.0:%d' % tq.config.ports.http,
           '--log.level=' + tq.config.logLevel,
+          '--log.format=' + tq.config.logFormat,
         ] + [
           '--query.replica-label=%s' % labelName
           for labelName in tq.config.replicaLabels
