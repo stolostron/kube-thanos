@@ -119,6 +119,16 @@ function(params) {
     },
   },
 
+  serviceAccount: {
+    apiVersion: 'v1',
+    kind: 'ServiceAccount',
+    metadata: {
+      name: tqf.config.name,
+      namespace: tqf.config.namespace,
+      labels: tqf.config.commonLabels,
+    },
+  },
+
   deployment:
     local c = {
       name: 'thanos-query-frontend',
@@ -154,6 +164,9 @@ function(params) {
           ),
         ] else []
       ),
+      securityContext: {
+        runAsUser: 65534,
+      },
       ports: [
         { name: name, containerPort: tqf.config.ports[name] }
         for name in std.objectFields(tqf.config.ports)
@@ -187,6 +200,10 @@ function(params) {
           metadata: { labels: tqf.config.commonLabels },
           spec: {
             containers: [c],
+            serviceAccountName: tqf.serviceAccount.metadata.name,
+            securityContext: {
+              fsGroup: 65534,
+            },
             terminationGracePeriodSeconds: 120,
             affinity: { podAntiAffinity: {
               preferredDuringSchedulingIgnoredDuringExecution: [{

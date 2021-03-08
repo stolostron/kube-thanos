@@ -68,10 +68,10 @@ spec:
         - --receive.replication-factor=1
         - --objstore.config=$(OBJSTORE_CONFIG)
         - --tsdb.path=/var/thanos/receive
-        - --label=replica="$(NAME)"
-        - --label=receive="true"
         - --tsdb.retention=15d
         - --receive.local-endpoint=$(NAME).thanos-receive.$(NAMESPACE).svc.cluster.local:10901
+        - --label=replica="$(NAME)"
+        - --label=receive="true"
         - --receive.hashrings-file=/var/lib/thanos-receive/hashrings.json
         - |-
           --tracing.config="config":
@@ -123,6 +123,8 @@ spec:
           requests:
             cpu: 0.123
             memory: 123Mi
+        securityContext:
+          runAsUser: 65534
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/thanos/receive
@@ -130,6 +132,9 @@ spec:
           readOnly: false
         - mountPath: /var/lib/thanos-receive
           name: hashring-config
+      securityContext:
+        fsGroup: 65534
+      serviceAccountName: thanos-receive
       terminationGracePeriodSeconds: 900
       volumes:
       - configMap:

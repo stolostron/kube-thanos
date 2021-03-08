@@ -62,12 +62,23 @@ local re = t.receive(commonConfig {
   hashringConfigMapName: 'hashring',
 });
 
-
 local ru = t.rule(commonConfig {
   replicas: 1,
   rulesConfig: [{ name: 'test', key: 'test' }],
   alertmanagersURLs: ['alertmanager:9093'],
+  reloaderImage: 'jimmidyson/configmap-reload:v0.5.0',
   serviceMonitor: true,
+});
+
+local sc = t.sidecar(commonConfig {
+  // namespace: 'monitoring',
+  serviceMonitor: true,
+  // Labels of the Prometheus pods with a Thanos Sidecar container
+  podLabelSelector: {
+    // Here it is the default label given by the prometheus-operator
+    // to all Prometheus pods
+    app: 'prometheus',
+  },
 });
 
 local s = t.store(commonConfig {
@@ -96,10 +107,6 @@ local s = t.store(commonConfig {
 local q = t.query(commonConfig {
   name: 'thanos-query',
   replicas: 1,
-  stores: [
-    'dnssrv+_grpc._tcp.%s.%s.svc.cluster.local' % [service.metadata.name, service.metadata.namespace]
-    for service in [re.service, ru.service, s.service]
-  ],
   externalPrefix: '',
   resources: {},
   queryTimeout: '5m',
@@ -158,8 +165,8 @@ local rcvs = t.receiveHashrings(commonConfig {
       tenants: [],
     },
   ],
-  replicas: 1,
-  replicationFactor: 1,
+  replicas: 3,
+  replicationFactor: 2,
   serviceMonitor: true,
   hashringConfigMapName: 'hashring',
 });
@@ -191,24 +198,25 @@ local strs = t.storeShards(commonConfig {
 local finalQ = t.query(q.config {
   stores: [
     'dnssrv+_grpc._tcp.%s.%s.svc.cluster.local' % [service.metadata.name, service.metadata.namespace]
-    for service in [re.service, ru.service, s.service] +
-                   [rcvs[hashring].service for hashring in std.objectFields(rcvs)] +
+    for service in [re.service, ru.service, sc.service, s.service] +
+                   [rcvs.hashrings[hashring].service for hashring in std.objectFields(rcvs.hashrings)] +
                    [strs.shards[shard].service for shard in std.objectFields(strs.shards)]
   ],
 });
 
-{ ['thanos-bucket-' + name]: b[name] for name in std.objectFields(b) } +
-{ ['thanos-compact-' + name]: c[name] for name in std.objectFields(c) } +
-{ ['thanos-receive-' + name]: re[name] for name in std.objectFields(re) } +
-{ ['thanos-rule-' + name]: finalRu[name] for name in std.objectFields(finalRu) } +
-{ ['thanos-store-' + name]: s[name] for name in std.objectFields(s) } +
-{ ['thanos-query-' + name]: finalQ[name] for name in std.objectFields(finalQ) } +
-{ ['thanos-query-frontend-' + name]: qf[name] for name in std.objectFields(qf) } +
+{ ['thanos-bucket-' + name]: b[name] for name in std.objectFields(b) if b[name] != null } +
+{ ['thanos-compact-' + name]: c[name] for name in std.objectFields(c) if c[name] != null } +
+{ ['thanos-receive-' + name]: re[name] for name in std.objectFields(re) if re[name] != null } +
+{ ['thanos-rule-' + name]: finalRu[name] for name in std.objectFields(finalRu) if finalRu[name] != null } +
+{ ['thanos-sidecar-' + name]: sc[name] for name in std.objectFields(sc) if sc[name] != null } +
+{ ['thanos-store-' + name]: s[name] for name in std.objectFields(s) if s[name] != null } +
+{ ['thanos-query-' + name]: finalQ[name] for name in std.objectFields(finalQ) if finalQ[name] != null } +
+{ ['thanos-query-frontend-' + name]: qf[name] for name in std.objectFields(qf) if qf[name] != null } +
 {
-  ['thanos-receive-' + hashring + '-' + name]: rcvs[hashring][name]
-  for hashring in std.objectFields(rcvs)
-  for name in std.objectFields(rcvs[hashring])
-  if rcvs[hashring][name] != null
+  ['thanos-receive-' + hashring + '-' + name]: rcvs.hashrings[hashring][name]
+  for hashring in std.objectFields(rcvs.hashrings)
+  for name in std.objectFields(rcvs.hashrings[hashring])
+  if rcvs.hashrings[hashring][name] != null
 } +
 {
   ['store-' + shard + '-' + name]: strs.shards[shard][name]
@@ -218,4 +226,5 @@ local finalQ = t.query(q.config {
 } +
 {
   'store-shards-serviceMonitor': strs.serviceMonitor,
+  'receive-hashrings-serviceMonitor': rcvs.serviceMonitor,
 }

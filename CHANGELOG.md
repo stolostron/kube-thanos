@@ -16,14 +16,17 @@ We use *breaking* word for marking changes that are not backward compatible (rel
 ### Breaking Changes
 
 - [#188](https://github.com/thanos-io/kube-thanos/pull/188) Single ServiceMonitor for store shards
+- [#196](https://github.com/thanos-io/kube-thanos/pull/196) Single ServiceAccount for all hashrings, causing hashrings position in the object tree to change.
 
 ### Changed
 
--
+- [#196](https://github.com/thanos-io/kube-thanos/pull/196) Single ServiceAccount for each component.
+- [#200](https://github.com/thanos-io/kube-thanos/pull/200) [#202](https://github.com/thanos-io/kube-thanos/pull/200) Run all components as non-root.
 
 ### Added
 
--
+- [#192](https://github.com/thanos-io/kube-thanos/pull/192) sidecar: Add pod discovery
+- [#194](https://github.com/thanos-io/kube-thanos/pull/194) Allow configuring --label and --receive.tenant-label-name flags.
 
 ### Fixed
 

@@ -16,15 +16,31 @@ function(params)
   assert std.isNumber(config.shards) && config.shards >= 0 : 'thanos store shards has to be number >= 0';
 
   { config:: config } + {
+    local allShards = self,
+
+    serviceAccount: {
+      apiVersion: 'v1',
+      kind: 'ServiceAccount',
+      metadata: {
+        name: config.name,
+        namespace: config.namespace,
+        labels: config.commonLabels,
+      },
+    },
+
     shards: {
       ['shard' + i]: store(config {
         name+: '-%d' % i,
-        commonLabels+:: { 'store.observatorium.io/shard': 'shard-' + i },
+        commonLabels+:: { 'store.thanos.io/shard': 'shard-' + i },
       }) {
+        serviceAccount: null,  // one service account for all stores
+        serviceMonitor: null,  // one service monitor foal all stores
+
         statefulSet+: {
           spec+: {
             template+: {
               spec+: {
+                serviceAccountName: allShards.serviceAccount.metadata.name,
                 containers: [
                   if c.name == 'thanos-store' then c {
                     args+: [
@@ -46,8 +62,6 @@ function(params)
             },
           },
         },
-
-        serviceMonitor: null,
       }
       for i in std.range(0, config.shards - 1)
     },
@@ -78,7 +92,7 @@ function(params)
                 targetLabel: 'instance',
               },
               {
-                sourceLabels: ['__meta_kubernetes_service_label_store_observatorium_io_shard'],
+                sourceLabels: ['__meta_kubernetes_service_label_store_thanos_io_shard'],
                 regex: 'shard\\-(\\d+)',
                 replacement: '$1',
                 targetLabel: 'shard',

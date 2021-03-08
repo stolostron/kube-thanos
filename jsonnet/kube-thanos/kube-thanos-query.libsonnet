@@ -74,6 +74,16 @@ function(params) {
     },
   },
 
+  serviceAccount: {
+    apiVersion: 'v1',
+    kind: 'ServiceAccount',
+    metadata: {
+      name: tq.config.name,
+      namespace: tq.config.namespace,
+      labels: tq.config.commonLabels,
+    },
+  },
+
   deployment:
     local c = {
       name: 'thanos-query',
@@ -113,6 +123,9 @@ function(params) {
             ),
           ] else []
         ),
+      securityContext: {
+        runAsUser: 65534,
+      },
       ports: [
         { name: port.name, containerPort: port.port }
         for port in tq.service.spec.ports
@@ -148,6 +161,10 @@ function(params) {
           },
           spec: {
             containers: [c],
+            securityContext: {
+              fsGroup: 65534,
+            },
+            serviceAccountName: tq.serviceAccount.metadata.name,
             terminationGracePeriodSeconds: 120,
             affinity: { podAntiAffinity: {
               preferredDuringSchedulingIgnoredDuringExecution: [{
