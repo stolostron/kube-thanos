@@ -39,7 +39,8 @@ local commonConfig = {
 
 local b = t.bucket(commonConfig {
   replicas: 1,
-
+  label: 'cluster_name',
+  refresh: '5m',
   // Example on how to overwrite the tracing config on a per component basis
   // tracing+: {
   //   config+: {
@@ -110,6 +111,7 @@ local q = t.query(commonConfig {
   externalPrefix: '',
   resources: {},
   queryTimeout: '5m',
+  autoDownsampling: true,
   lookbackDelta: '15m',
   ports: {
     grpc: 10901,
@@ -178,19 +180,19 @@ local strs = t.storeShards(commonConfig {
   bucketCache: {
     type: 'memcached',
     config+: {
-      // NOTICE: <MEMCACHED_SERCIVE> is a placeholder to generate examples.
+      // NOTICE: <MEMCACHED_SERVICE> is a placeholder to generate examples.
       // List of memcached addresses, that will get resolved with the DNS service discovery provider.
       // For DNS service discovery reference https://thanos.io/service-discovery.md/#dns-service-discovery
-      addresses: ['dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.%s.svc.cluster.local' % commonConfig.namespace],
+      addresses: ['dnssrv+_client._tcp.<MEMCACHED_SERVICE>.%s.svc.cluster.local' % commonConfig.namespace],
     },
   },
   indexCache: {
     type: 'memcached',
     config+: {
-      // NOTICE: <MEMCACHED_SERCIVE> is a placeholder to generate examples.
+      // NOTICE: <MEMCACHED_SERVICE> is a placeholder to generate examples.
       // List of memcached addresses, that will get resolved with the DNS service discovery provider.
       // For DNS service discovery reference https://thanos.io/service-discovery.md/#dns-service-discovery
-      addresses: ['dnssrv+_client._tcp.<MEMCACHED_SERCIVE>.%s.svc.cluster.local' % commonConfig.namespace],
+      addresses: ['dnssrv+_client._tcp.<MEMCACHED_SERVICE>.%s.svc.cluster.local' % commonConfig.namespace],
     },
   },
 });

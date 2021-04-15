@@ -25,6 +25,7 @@ function(params) {
   assert std.isObject(ts.config.resources),
   assert std.isBoolean(ts.config.serviceMonitor),
   assert std.isObject(ts.config.volumeClaimTemplate),
+  assert !std.objectHas(ts.config.volumeClaimTemplate, 'spec') || std.assertEqual(ts.config.volumeClaimTemplate.spec.accessModes, ['ReadWriteOnce']) : 'thanos store PVC accessMode can only be ReadWriteOnce',
 
   service: {
     apiVersion: 'v1',
@@ -83,15 +84,20 @@ function(params) {
           '--store.caching-bucket.config=' + std.manifestYamlDoc(ts.config.bucketCache),
         ] else []
       ) + (
+        if std.length(ts.config.minTime) > 0 then [
+          '--min-time=' + ts.config.minTime,
+        ] else []
+      ) + (
+        if std.length(ts.config.maxTime) > 0 then [
+          '--max-time=' + ts.config.maxTime,
+        ] else []
+      ) + (
         if std.length(ts.config.tracing) > 0 then [
           '--tracing.config=' + std.manifestYamlDoc(
             { config+: { service_name: defaults.name } } + ts.config.tracing
           ),
         ] else []
       ),
-      securityContext: {
-        runAsUser: 65534,
-      },
       env: [
         { name: 'OBJSTORE_CONFIG', valueFrom: { secretKeyRef: {
           key: ts.config.objectStorageConfig.key,
@@ -139,9 +145,7 @@ function(params) {
           },
           spec: {
             serviceAccountName: ts.serviceAccount.metadata.name,
-            securityContext: {
-              fsGroup: 65534,
-            },
+            securityContext: ts.config.securityContext,
             containers: [c],
             volumes: [],
             terminationGracePeriodSeconds: 120,

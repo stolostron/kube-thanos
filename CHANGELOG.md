@@ -22,11 +22,15 @@ We use *breaking* word for marking changes that are not backward compatible (rel
 
 - [#196](https://github.com/thanos-io/kube-thanos/pull/196) Single ServiceAccount for each component.
 - [#200](https://github.com/thanos-io/kube-thanos/pull/200) [#202](https://github.com/thanos-io/kube-thanos/pull/200) Run all components as non-root.
+- [#208](https://github.com/thanos-io/kube-thanos/pull/208) Documentation: Refer to `main` branch in docs
 
 ### Added
 
 - [#192](https://github.com/thanos-io/kube-thanos/pull/192) sidecar: Add pod discovery
 - [#194](https://github.com/thanos-io/kube-thanos/pull/194) Allow configuring --label and --receive.tenant-label-name flags.
+- [#209](https://github.com/thanos-io/kube-thanos/pull/209) Allow configuring --label and --refresh flags of bucket web.
+- [#213](https://github.com/thanos-io/kube-thanos/pull/213) Allow configuring `--min-time` and `--max-time` of store.
+- [#218](https://github.com/thanos-io/kube-thanos/pull/218) Enable `--query.auto-downsampling` for query by default.
 
 ### Fixed
 
