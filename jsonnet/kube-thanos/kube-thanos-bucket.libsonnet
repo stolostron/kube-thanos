@@ -28,6 +28,11 @@ local defaults = {
     for labelName in std.objectFields(defaults.commonLabels)
     if labelName != 'app.kubernetes.io/version'
   },
+
+  securityContext:: {
+    fsGroup: 65534,
+    runAsUser: 65534,
+  },
 };
 
 function(params) {
@@ -90,10 +95,15 @@ function(params) {
             { config+: { service_name: defaults.name } } + tb.config.tracing
           ),
         ] else []
+      ) + (
+        if std.objectHas(tb.config, 'label') then [
+          '--label=' + tb.config.label,
+        ] else []
+      ) + (
+        if std.objectHas(tb.config, 'refresh') then [
+          '--refresh=' + tb.config.refresh,
+        ] else []
       ),
-      securityContext: {
-        runAsUser: 65534,
-      },
       env: [
         { name: 'OBJSTORE_CONFIG', valueFrom: { secretKeyRef: {
           key: tb.config.objectStorageConfig.key,
@@ -133,9 +143,7 @@ function(params) {
           metadata: { labels: tb.config.commonLabels },
           spec: {
             serviceAccountName: tb.serviceAccount.metadata.name,
-            securityContext: {
-              fsGroup: 65534,
-            },
+            securityContext: tb.config.securityContext,
             containers: [container],
             terminationGracePeriodSeconds: 120,
           },

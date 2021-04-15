@@ -37,6 +37,8 @@ spec:
             "sampler_type": "ratelimiting"
             "service_name": "thanos-bucket"
           "type": "JAEGER"
+        - --label=cluster_name
+        - --refresh=5m
         env:
         - name: OBJSTORE_CONFIG
           valueFrom:
@@ -69,10 +71,9 @@ spec:
           requests:
             cpu: 0.123
             memory: 123Mi
-        securityContext:
-          runAsUser: 65534
         terminationMessagePolicy: FallbackToLogsOnError
       securityContext:
         fsGroup: 65534
+        runAsUser: 65534
       serviceAccountName: thanos-bucket
       terminationGracePeriodSeconds: 120

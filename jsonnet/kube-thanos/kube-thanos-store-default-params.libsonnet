@@ -22,6 +22,8 @@
     http: 10902,
   },
   tracing: {},
+  minTime: '',
+  maxTime: '',
 
   memcachedDefaults+:: {
     config+: {
@@ -64,5 +66,10 @@
     [labelName]: defaults.commonLabels[labelName]
     for labelName in std.objectFields(defaults.commonLabels)
     if labelName != 'app.kubernetes.io/version'
+  },
+
+  securityContext:: {
+    fsGroup: 65534,
+    runAsUser: 65534,
   },
 }
