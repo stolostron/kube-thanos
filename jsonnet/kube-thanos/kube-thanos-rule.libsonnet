@@ -12,6 +12,8 @@ local defaults = {
   objectStorageConfig: error 'must provide objectStorageConfig',
   ruleFiles: [],
   rulesConfig: [],
+  retention: '48h',
+  blockDuration: '2h',
   alertmanagersURLs: [],
   queriers: [],
   logLevel: 'info',
@@ -109,6 +111,8 @@ function(params) {
           '--data-dir=/var/thanos/rule',
           '--label=rule_replica="$(NAME)"',
           '--alert.label-drop=rule_replica',
+          '--tsdb.retention=' + tr.config.retention,
+          '--tsdb.block-duration=' + tr.config.blockDuration,
         ] +
         (['--query=%s' % querier for querier in tr.config.queriers]) +
         (['--rule-file=%s' % path for path in tr.config.ruleFiles]) +
