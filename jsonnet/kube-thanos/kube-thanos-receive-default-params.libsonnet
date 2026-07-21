@@ -37,6 +37,8 @@
   extraEnv: [],
   receiveLimitsConfigFile: {},
   storeLimits: {},
+  tlsCipherSuites: '',
+  tlsMinVersion: '',
 
   commonLabels:: {
     'app.kubernetes.io/name': 'thanos-receive',

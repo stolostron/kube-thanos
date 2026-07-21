@@ -36,6 +36,8 @@
   minTime: '',
   maxTime: '',
   extraEnv: [],
+  tlsCipherSuites: '',
+  tlsMinVersion: '',
 
   memcachedDefaults+:: {
     config+: {
