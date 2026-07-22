@@ -32,6 +32,8 @@ local defaults = {
   telemetryDurationQuantiles: '',
   telemetrySamplesQuantiles: '',
   telemetrySeriesQuantiles: '',
+  tlsCipherSuites: '',
+  tlsMinVersion: '',
 
   commonLabels:: {
     'app.kubernetes.io/name': 'thanos-query',
@@ -190,6 +192,14 @@ function(params) {
         ) + (
           if tq.config.queryUrl != '' then [
             '--alert.query-url=' + tq.config.queryUrl,
+          ] else []
+        ) + (
+          if std.length(tq.config.tlsCipherSuites) > 0 then [
+            '--grpc-server-tls-ciphers=' + tq.config.tlsCipherSuites,
+          ] else []
+        ) + (
+          if std.length(tq.config.tlsMinVersion) > 0 then [
+            '--grpc-server-tls-min-version=' + tq.config.tlsMinVersion,
           ] else []
         ),
       env: [

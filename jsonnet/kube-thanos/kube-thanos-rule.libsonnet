@@ -32,6 +32,8 @@ local defaults = {
   },
   tracing: {},
   extraEnv: [],
+  tlsCipherSuites: '',
+  tlsMinVersion: '',
 
   commonLabels:: {
     'app.kubernetes.io/name': 'thanos-rule',
@@ -166,6 +168,14 @@ function(params) {
             '--remote-write.config-file=/etc/thanos/config/' + tr.config.remoteWriteConfigFile.name + '/' + tr.config.remoteWriteConfigFile.key,
           ]
           else []
+        ) + (
+          if std.length(tr.config.tlsCipherSuites) > 0 then [
+            '--grpc-server-tls-ciphers=' + tr.config.tlsCipherSuites,
+          ] else []
+        ) + (
+          if std.length(tr.config.tlsMinVersion) > 0 then [
+            '--grpc-server-tls-min-version=' + tr.config.tlsMinVersion,
+          ] else []
         ),
       env: [
         { name: 'NAME', valueFrom: { fieldRef: { fieldPath: 'metadata.name' } } },
